@@ -1,11 +1,16 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, StudyLevel } from "../types";
 
-// Fix: Always use named parameter and direct process.env.API_KEY string
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+    throw new Error("Gemini API Key is missing. Please set GEMINI_API_KEY in your .env.local file.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const analyzeResume = async (resumeData: { text?: string, file?: { data: string, mimeType: string } }, targetJob: string) => {
+  const ai = getAI();
   const parts: any[] = [
     { text: `Analyze this resume for a ${targetJob} role. Provide feedback in JSON format.` }
   ];
@@ -21,9 +26,9 @@ export const analyzeResume = async (resumeData: { text?: string, file?: { data: 
     parts.push({ text: `Resume Content: ${resumeData.text}` });
   }
 
-  // Fix: Upgrade to gemini-3-pro-preview for advanced reasoning (resume analysis)
+  // Use gemini-flash-latest for reliable multimodal analysis (PDF support)
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-flash-latest',
     contents: { parts },
     config: {
       responseMimeType: "application/json",
@@ -39,14 +44,17 @@ export const analyzeResume = async (resumeData: { text?: string, file?: { data: 
       }
     }
   });
-  // Fix: Use .text property and trim before parsing
-  return JSON.parse(response.text.trim());
+  
+  const text = response.text || "{}";
+  // Remove potential markdown code blocks if the model accidentally includes them
+  const jsonStr = text.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(jsonStr);
 };
 
 export const generateSkillTree = async (interest: string) => {
-  // Fix: Upgrade to gemini-3-pro-preview for complex hierarchical generation
+  const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Generate a hierarchical skill learning path for someone interested in ${interest}. 
     Provide 3 main modules, each with 2-3 sub-skills.
     Format as JSON structure: { "id": string, "label": string, "description": string, "children": [...] }`,
@@ -87,13 +95,15 @@ export const generateSkillTree = async (interest: string) => {
       }
     }
   });
-  return JSON.parse(response.text.trim());
+  const text = response.text || "{}";
+  const jsonStr = text.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(jsonStr);
 };
 
 export const getAIPersonalityAssessment = async (answers: string[]) => {
-  // Fix: Upgrade to gemini-3-pro-preview for better assessment reasoning
+  const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3-flash-preview',
     contents: `Based on these personality answers: ${answers.join(", ")}, suggest 3 industries and 3 specific job roles that fit this user. Return JSON.`,
     config: {
       responseMimeType: "application/json",
@@ -108,10 +118,13 @@ export const getAIPersonalityAssessment = async (answers: string[]) => {
       }
     }
   });
-  return JSON.parse(response.text.trim());
+  const text = response.text || "{}";
+  const jsonStr = text.replace(/```json\n?|```/g, '').trim();
+  return JSON.parse(jsonStr);
 };
 
 export const chatWithCoach = async (message: string, context: string) => {
+  const ai = getAI();
   // Fix: gemini-3-flash-preview is suitable for concise conversational tasks
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
