@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.skillpathai.app",
+  "appName": "SkillPath AI",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
