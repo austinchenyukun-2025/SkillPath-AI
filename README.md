@@ -1,4 +1,4 @@
-Project SkillAI Documentation
+Project SkillPathAI Documentation
 ========================================================================================================================================
 
 Technical Architecture:
